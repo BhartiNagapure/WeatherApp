@@ -1,5 +1,6 @@
 <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -8,7 +9,6 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
         android:background="@drawable/bg_gradient"
         android:orientation="vertical"
         android:padding="10dp">
@@ -36,7 +36,7 @@
                     android:gravity="center"
                     android:textColor="@color/white"
                     android:textSize="24sp"
-                    android:layout_marginTop="20dp"/>
+                    android:layout_marginTop="10dp"/>
 
                 <TextView
                     android:id="@+id/updated_at"
@@ -100,7 +100,7 @@
 
                     <LinearLayout
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="55dp"
                         android:layout_weight="1"
                         android:gravity="center"
                         android:orientation="vertical">

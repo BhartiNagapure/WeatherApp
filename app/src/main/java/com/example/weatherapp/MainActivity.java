@@ -1,13 +1,8 @@
 package com.example.weatherapp;
 
-import static android.Manifest.permission.ACCESS_BACKGROUND_LOCATION;
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
-import static com.example.weatherapp.constants.AppConstant.LATITUDE;
-import static com.example.weatherapp.constants.AppConstant.LONGITUDE;
 import static com.example.weatherapp.constants.AppConstant.PREFERENCES;
-
-import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -15,8 +10,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
-import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -26,7 +19,6 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -34,7 +26,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-
 import com.example.weatherapp.response.WeatherResponse;
 import com.example.weatherapp.utils.CheckNetwork;
 import com.example.weatherapp.view_model.WeatherViewModel;
@@ -47,7 +38,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener, LocationListener {
+public class MainActivity extends AppCompatActivity implements SwipeRefreshLayout.OnRefreshListener {
     private static final String TAG = MainActivity.class.getSimpleName();
     WeatherViewModel weatherViewModel;
 
@@ -58,7 +49,6 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
     SharedPreferences sharedpreferences;
     LocationManager locationManager;
 
-    private static final int REQUEST_LOCATION = 1;
     public static final int REQUEST_ID_MULTIPLE_PERMISSIONS = 1;
 
     @Override
@@ -66,18 +56,14 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        initialization();
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             checkAndRequestPermissions();
         }
+
+        initialization();
+
     }
 
-    /**
-     * initialization of views and others
-     *
-     * @param @null
-     */
     private void initialization() {
 
         txt_address = findViewById(R.id.address);
@@ -91,9 +77,13 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         txt_humidity = findViewById(R.id.humidity);
         swipeRefreshLayout = findViewById(R.id.refresh_layout);
 
+        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+
         swipeRefreshLayout.setOnRefreshListener(this);
 
         sharedpreferences = getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
+
+        weatherViewModel = ViewModelProviders.of(this).get(WeatherViewModel.class);
 
     }
 
@@ -120,20 +110,34 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
                 }
             });
         }else{
+            if (swipeRefreshLayout.isRefreshing()) {
+                swipeRefreshLayout.setRefreshing(false);
+            }
             Toast.makeText(this, "Please check your internet connection", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void getLocationData() {
+        weatherViewModel.getLocationLiveData().observe(this, location -> {
+                if (location != null) {
+                    Log.d(TAG, ": " + location);
+
+                    getWeatherData();
+                }
+        });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
-        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
             OnGPS();
         } else {
-            getLocation();
+            getLocationData();
         }
+
+
     }
 
     @Override
@@ -141,7 +145,6 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             checkAndRequestPermissions();
         }
-        onResume();
     }
 
     /* Get Address from LatLong */
@@ -244,54 +247,6 @@ public class MainActivity extends AppCompatActivity implements SwipeRefreshLayou
         });
         final AlertDialog alertDialog = builder.create();
         alertDialog.show();
-    }
-
-    private void getLocation() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 5, (LocationListener) this);
-
-        if (ActivityCompat.checkSelfPermission(MainActivity.this, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(MainActivity.this, ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(MainActivity.this, ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, new String[]{ACCESS_FINE_LOCATION}, REQUEST_LOCATION);
-        } else {
-            Location locationGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-            if (locationGPS != null) {
-                double lat = locationGPS.getLatitude();
-                double longi = locationGPS.getLongitude();
-
-                SharedPreferences.Editor editor = sharedpreferences.edit();
-                editor.putString(LATITUDE, String.valueOf(lat));
-                editor.putString(LONGITUDE, String.valueOf(longi));
-                editor.apply();
-
-                weatherViewModel = ViewModelProviders.of(this).get(WeatherViewModel.class);
-                getWeatherData();
-
-            } else {
-                Toast.makeText(this, "Unable to find location.", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    @Override
-    public void onLocationChanged(@NonNull Location location) {
-
-        SharedPreferences.Editor editor = sharedpreferences.edit();
-        editor.putString(LATITUDE, String.valueOf(location.getLatitude()));
-        editor.putString(LONGITUDE, String.valueOf(location.getLongitude()));
-        editor.apply();
-
-        getWeatherData();
     }
 
     /* Converting Kelvin to Celsius */
