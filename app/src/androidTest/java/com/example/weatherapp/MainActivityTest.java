@@ -35,6 +35,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+import javax.inject.Inject;
+
 import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -55,24 +57,62 @@ public class MainActivityTest {
                     "android.permission.ACCESS_FINE_LOCATION",
                     "android.permission.ACCESS_COARSE_LOCATION");
 
+    @Inject
+    OkHttp3IdlingResource okHttp3IdlingResource;
+
     @Before
     public void setup() {
         try {
             mockWebServer.start(8080);
-            OkHttpClient client =  new OkHttpClient();
-//            IdlingRegistry.getInstance().register(OkHttp3IdlingResource.create("okhttp", client));
+            OkHttpClient client = new OkHttpClient();
+//            IdlingRegistry.getInstance().register(okHttp3IdlingResource);
+
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     @After
-    public void  teardown() {
+    public void teardown() {
         try {
             mockWebServer.shutdown();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Test
+    public void checkViewAvailability() {
+        onView(withId(R.id.mainContainer))
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+
+        onView(withId(R.id.addressContainer))
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+        onView(withId(R.id.address))
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+        onView(withId(R.id.updated_at))
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+
+        onView(withId(R.id.overviewContainer))
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+        onView(withId(R.id.temp))
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+        onView(withId(R.id.status))
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+
+        onView(withId(R.id.detailsContainer))
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+        onView(withId(R.id.sunrise))
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+        onView(withId(R.id.sunset))
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+        onView(withId(R.id.wind))
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+        onView(withId(R.id.pressure))
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+        onView(withId(R.id.humidity))
+                .check(matches(withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)));
+
     }
 
     @Test
@@ -120,7 +160,7 @@ public class MainActivityTest {
     @Test
     public void testFailedResponse() {
 
-        mockWebServer.enqueue(new MockResponse().throttleBody(1024,5, TimeUnit.SECONDS));
+        mockWebServer.enqueue(new MockResponse().throttleBody(1024, 5, TimeUnit.SECONDS));
 
         mActivityRule.launchActivity(null);
 
